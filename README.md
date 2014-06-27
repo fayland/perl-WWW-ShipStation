@@ -1,6 +1,6 @@
 # NAME
 
-WWW::ShipStation - Blah blah blah
+WWW::ShipStation - ShipStation API
 
 # SYNOPSIS
 

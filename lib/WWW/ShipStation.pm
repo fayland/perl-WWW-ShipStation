@@ -158,7 +158,7 @@ __END__
 
 =head1 NAME
 
-WWW::ShipStation - Blah blah blah
+WWW::ShipStation - ShipStation API
 
 =head1 SYNOPSIS
 
