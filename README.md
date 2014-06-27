@@ -132,7 +132,7 @@ refer examples for running code
 
 [http://api.shipstation.com/ShippingService-Provider.ashx](http://api.shipstation.com/ShippingService-Provider.ashx)
 
-- getShippingServices
+## getShippingServices
 
     my $shippingservice = $ws->getShippingServices(
         filter => "(International eq false) and (ProviderId eq 4)"
@@ -140,7 +140,7 @@ refer examples for running code
 
 [http://api.shipstation.com/ShippingService%20Resource.ashx](http://api.shipstation.com/ShippingService%20Resource.ashx)
 
-- getStores
+## getStores
 
     my $stores = $ws->getStores(
         filter => "Active eq true"
@@ -148,7 +148,7 @@ refer examples for running code
 
 [http://api.shipstation.com/Store-Resource.ashx](http://api.shipstation.com/Store-Resource.ashx)
 
-- getWarehouses
+## getWarehouses
 
     my $warehouses = $ws->getWarehouses(
         filter => 'Default eq true'
