@@ -19,7 +19,7 @@ sub new {
     $args{json} = JSON->new->allow_nonref->utf8;
 
     $args{ua}->default_header('Accept', 'application/json'); # JSON is better
-    $args{ua}->credentials('data.shipstation.com', 'data.shipstation.com', $args{user}, $args{pass});
+    $args{ua}->credentials('data.shipstation.com:443', 'ShipStation', $args{user}, $args{pass});
 
     bless \%args, $class;
 }
@@ -36,6 +36,7 @@ sub request {
     my ($self, $url) = @_;
 
     my $resp = $self->{ua}->get($url);
+    # use Data::Dumper; print Dumper(\$resp);
     unless ($resp->is_success) {
         return { error => $resp->status_line };
     }
