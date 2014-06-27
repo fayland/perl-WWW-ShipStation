@@ -318,6 +318,16 @@ L<http://api.shipstation.com/Store-Resource.ashx>
 
 L<http://api.shipstation.com/Warehouse-Resource.ashx>
 
+
+=head2 request
+
+    my $data = $ws->request('Customers()');
+    my $data = $ws->request('Warehouses()',
+        filter => 'Default eq true'
+    );
+
+internal use
+
 =head1 AUTHOR
 
 Fayland Lam E<lt>fayland@gmail.comE<gt>
