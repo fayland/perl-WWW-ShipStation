@@ -156,6 +156,17 @@ refer examples for running code
 
 [http://api.shipstation.com/Warehouse-Resource.ashx](http://api.shipstation.com/Warehouse-Resource.ashx)
 
+
+
+## request
+
+    my $data = $ws->request('Customers()');
+    my $data = $ws->request('Warehouses()',
+        filter => 'Default eq true'
+    );
+
+internal use
+
 # AUTHOR
 
 Fayland Lam <fayland@gmail.com>
