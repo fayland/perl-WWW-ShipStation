@@ -36,6 +36,9 @@
       },
       "runtime" : {
          "requires" : {
+            "IO::Socket::SSL" : "0",
+            "JSON" : "0",
+            "LWP::UserAgent" : "0",
             "perl" : "5.008005"
          }
       },
@@ -46,6 +49,17 @@
       }
    },
    "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/fayland/perl-WWW-ShipStation/issues"
+      },
+      "homepage" : "https://github.com/fayland/perl-WWW-ShipStation",
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/fayland/perl-WWW-ShipStation.git",
+         "web" : "https://github.com/fayland/perl-WWW-ShipStation"
+      }
+   },
    "version" : "0.01"
 }
 
