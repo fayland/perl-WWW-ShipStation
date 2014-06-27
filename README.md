@@ -130,8 +130,7 @@ refer examples for running code
 
     my $shippingproviders = $ws->getShippingProviders();
 
-L<
->
+[http://api.shipstation.com/ShippingService-Provider.ashx](http://api.shipstation.com/ShippingService-Provider.ashx)
 
 - getShippingServices
 

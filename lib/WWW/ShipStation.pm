@@ -292,7 +292,7 @@ L<http://api.shipstation.com/Shipment-Resource.ashx>
 
     my $shippingproviders = $ws->getShippingProviders();
 
-L<
+L<http://api.shipstation.com/ShippingService-Provider.ashx>
 
 =item getShippingServices
 
