@@ -19,7 +19,7 @@ sub new {
     $args{ua} ||= LWP::UserAgent->new();
     $args{json} ||= JSON->new->allow_nonref->utf8;
 
-    $args{API_BASE} ||= 'https://data.shipstation.com/1.1/';
+    $args{API_BASE} ||= 'https://data.shipstation.com/1.3/';
 
     $args{ua}->default_header('Accept', 'application/json'); # JSON is better
     $args{ua}->credentials('data.shipstation.com:443', 'ShipStation', $args{user}, $args{pass});
