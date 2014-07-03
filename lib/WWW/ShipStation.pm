@@ -229,13 +229,6 @@ XML
         }
     }
 
-    sub __simple_escape {
-        my $str = shift;
-        $str =~ s/\&/\&amp;/g;
-        $str =~ s/\</\&lt;/g;
-        $str =~ s/\>/\&gt;/g;
-        $str;
-    }
     foreach my $x ('BuyerEmail', 'ExternalPaymentID', 'ExternalUrl', 'ImportKey', 'NonDelivery', 'CustomsContents', 'NotesFromBuyer', 'NotesToBuyer', 'InternalNotes', 'OrderNumber', 'RateError', 'RequestedShippingService', 'ResidentialIndicator', 'ShipCity', 'ShipCompany', 'ShipCountryCode', 'ShipName', 'ShipPhone', 'ShipPostalCode', 'ShipState', 'ShipStreet1', 'ShipStreet2', 'ShipStreet3', 'Username') {
         if (exists $args{$x}) {
             $content .= qq~<d:$x>~ . __simple_escape($args{$x}) . qq~</d:$x>\n~;
@@ -250,15 +243,106 @@ XML
 </entry>
 XML
 
-    my $req = HTTP::Request->new(POST => $self->{API_BASE} . 'Orders');
+    $self->__request('POST', 'https://data.shipstation.com/1.2/Orders', $content);
+}
+
+sub __simple_escape {
+    my $str = shift;
+    $str =~ s/\&/\&amp;/g;
+    $str =~ s/\</\&lt;/g;
+    $str =~ s/\>/\&gt;/g;
+    $str;
+}
+
+sub createOrderItem {
+    my $self = shift;
+
+    my %args = @_ % 2 ? %{$_[0]} : @_;
+
+    my $__now = __now();
+    my $content = <<XML;
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<entry xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns="http://www.w3.org/2005/Atom">
+  <category scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" term="SS.WebData.OrderItem" />
+  <title />
+  <author>
+    <name />
+  </author>
+  <updated>$__now.6214402Z</updated>
+  <id />
+  <content type="application/xml">
+    <m:properties>
+XML
+
+    # bool
+    foreach my $x ('Inactive') {
+        if ($args{$x}) {
+            $content .= qq~<d:$x m:type="Edm.Boolean">true</d:$x>\n~;
+        } else {
+            $content .= qq~<d:$x m:type="Edm.Boolean">false</d:$x>\n~;
+        }
+    }
+
+    # decimal
+    foreach my $x ('ExtendedPrice', 'ShippingAmount', 'TaxAmount', 'WeightOz') {
+        if (exists $args{$x}) {
+            my $v = sprintf('%.2f', $args{$x});
+            $content .= qq~<d:$x m:type="Edm.Decimal">$v</d:$x>\n~;
+        } else {
+            $content .= qq~<d:$x m:type="Edm.Decimal" m:null="true" />\n~;
+        }
+    }
+
+    # int32
+    foreach my $x ('OrderID', 'OrderItemID', 'ProductID', 'Quantity', 'UnitCost', 'UnitPrice') {
+        $args{$x} ||= 0 if $x eq 'OrderID' or $x eq 'OrderItemID';
+        if (exists $args{$x}) {
+            $content .= qq~<d:$x m:type="Edm.Int32">$args{$x}</d:$x>\n~;
+        } else {
+            $content .= qq~<d:$x m:type="Edm.Int32" m:null="true" />\n~;
+        }
+    }
+
+    # DateTime
+    foreach my $x ('CreateDate', 'ModifyDate') {
+        if (exists $args{$x}) {
+            $content .= qq~<d:$x m:type="Edm.DateTime">$args{$x}</d:$x>\n~;
+        } else {
+            $content .= qq~<d:$x m:type="Edm.DateTime" m:null="true" />\n~;
+        }
+    }
+
+    foreach my $x ('Description', 'ItemUrl', 'Options', 'SKU', 'ThumbnailUrl', 'UPC', 'WarehouseLocation') {
+        if (exists $args{$x}) {
+            $content .= qq~<d:$x>~ . __simple_escape($args{$x}) . qq~</d:$x>\n~;
+        } else {
+            $content .= qq~<d:$x m:null="true" />\n~;
+        }
+    }
+
+    $content .= <<'XML';
+    </m:properties>
+  </content>
+</entry>
+XML
+
+    $self->__request('POST', 'https://data.shipstation.com/1.2/OrderItems', $content);
+}
+
+sub __request {
+    my ($self, $method, $url, $content) = @_;
+
+    my $req = HTTP::Request->new($method => $url);
     $req->authorization_basic($self->{user}, $self->{pass});
     $req->header('Accept', 'application/json'); # JSON is better
     $req->header('Accept-Charset' => 'UTF-8');
-    $req->header('Content-Type' => 'application/atom+xml');
-    $req->content($content);
+    if ($method eq 'POST') {
+        $req->header('Content-Type' => 'application/atom+xml');
+    }
+    $req->content($content) if $content;
 
     my $res = $self->{ua}->request($req);
-    use Data::Dumper; print STDERR Dumper(\$res);
+    # use Data::Dumper; print STDERR Dumper(\$res);
     unless ($res->is_success) {
         return { error => $res->status_line };
     }
@@ -432,6 +516,45 @@ L<http://api.shipstation.com/Store-Resource.ashx>
 
 L<http://api.shipstation.com/Warehouse-Resource.ashx>
 
+=head2 createOrder
+
+    my $order = $ws->createOrder(
+        StoreID => 0,
+        OrderNumber => "TEST001",
+        ImportKey   => "TEST001",
+        OrderDate   => "2014-07-02T09:30:00",
+        PayDate     => "2014-07-02T09:30:00",
+        OrderStatusID => 2,
+        RequestedShippingService => "USPS Priority Mail",
+        OrderTotal => '123.45',
+        AmountPaid => '123.45',
+        ShippingAmount => '4.50',
+        WeightOz => 16,
+        NotesFromBuyer => "Please make sure it gets here by Monday!",
+        Username       => 'customer@mystore.com',
+        BuyerEmail     => 'customer@mystore.com',
+        ShipName       => "The President",
+        ShipCompany    => "US Govt",
+        ShipStreet1    => "1600 Pennsylvania Ave",
+        ShipCity       => "Washington",
+        ShipState      => "DC",
+        ShipPostalCode => "20500",
+        ShipCountryCode => "US",
+        ShipPhone      => "512-555-5555",
+    );
+
+=head2 createOrderItem
+
+    my $orderItem = $ws->createOrderItem(
+        OrderID => $OrderID,
+        SKU => "FD88821",
+        Description   => "My Product Name",
+        ThumbnailUrl   => "http://www.mystore.com/products/12345.jpg",
+        WeightOz => 8,
+        Quantity => 2,
+        UnitPrice => 13.99,
+        Options => "Size: Large\nColor: Green",
+    );
 
 =head2 request
 
