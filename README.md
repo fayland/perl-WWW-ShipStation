@@ -196,6 +196,10 @@ refer examples for running code
         Options => "Size: Large\nColor: Green",
     );
 
+## deleteOrder
+
+    my $is_success = $ws->deleteOrder($OrderID);
+
 ## request
 
     my $data = $ws->request('Customers()');
