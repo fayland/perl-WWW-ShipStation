@@ -145,10 +145,20 @@ sub request {
     $req->header('Accept', 'application/json'); # JSON is better
     my $res = $self->{ua}->request($req);
     # use Data::Dumper; print STDERR Dumper(\$res);
-    unless ($res->is_success) {
-        return { error => $res->status_line };
+    if ($res->header('Content-Type') =~ m{application/json}) {
+        return $self->{json}->decode($res->decoded_content);
     }
-    return $self->{json}->decode($res->decoded_content);
+    unless ($res->is_success) {
+        return {
+            'error' => {
+                'code' => '',
+                'message' => {
+                    'lang' => 'en-US',
+                    'value' => $res->status_line,
+                }
+            }
+        };
+    }
 }
 
 sub __now {
@@ -254,6 +264,12 @@ sub __simple_escape {
     $str;
 }
 
+sub deleteOrder {
+    my ($self, $orderID) = @_;
+
+    $self->__request('DELETE', "http://data.shipstation.com/1.2/Orders($orderID)");
+}
+
 sub createOrderItem {
     my $self = shift;
 
@@ -343,10 +359,24 @@ sub __request {
 
     my $res = $self->{ua}->request($req);
     # use Data::Dumper; print STDERR Dumper(\$res);
-    unless ($res->is_success) {
-        return { error => $res->status_line };
+    if ($method eq 'DELETE') {
+        return $res->code == 204 ? 1 : 0;
     }
-    return $self->{json}->decode($res->decoded_content);
+    if ($res->header('Content-Type') =~ m{application/json}) {
+        return $self->{json}->decode($res->decoded_content);
+    }
+    unless ($res->is_success) {
+        return {
+            'error' => {
+                'code' => '',
+                'message' => {
+                    'lang' => 'en-US',
+                    'value' => $res->status_line
+                }
+            }
+        };
+    }
+    return $res->decoded_content;
 }
 
 1;
@@ -555,6 +585,10 @@ L<http://api.shipstation.com/Warehouse-Resource.ashx>
         UnitPrice => 13.99,
         Options => "Size: Large\nColor: Green",
     );
+
+=head2 deleteOrder
+
+    my $is_success = $ws->deleteOrder($OrderID);
 
 =head2 request
 

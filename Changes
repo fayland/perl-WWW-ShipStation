@@ -1,6 +1,7 @@
 Revision history for WWW-ShipStation
 
 {{$NEXT}}
+        - add createOrder and createOrderItem, deleteOrder
 
 0.03  2014-07-01 10:30:37 CST
         - small code changes.

@@ -45,6 +45,6 @@ my $order = $ws->createOrder(
     ShipCountryCode => "US",
     ShipPhone      => "512-555-5555",
 );
-print Dumper(\$order); # 40126405
+print Dumper(\$order);
 
 1;
