@@ -15,12 +15,6 @@ my $ws = WWW::ShipStation->new(
     pass => $ENV{SHIPSTATION_PASS}
 );
 
-# my $stores = $ws->getStores(
-#     filter => "Active eq true"
-# );
-# my $StoreID = $stores->{d}->[0]->{StoreID};
-
-my $StoreID = 13652;
 my $order = $ws->createOrder(
     StoreID => 0,
     OrderNumber => "TEST001",
