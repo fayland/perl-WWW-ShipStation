@@ -199,11 +199,11 @@ refer examples for running code
 
 =item * user
 
-required
+required, API key
 
 =item * pass
 
-required
+required, API secret
 
 =item * ua
 
