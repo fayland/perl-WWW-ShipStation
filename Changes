@@ -1,6 +1,8 @@
 Revision history for WWW-ShipStation
 
 {{$NEXT}}
+
+0.05  2015-08-01 11:46:10 CST
         - change for new API endpoint, API IS ALL CHANGED!
 
 0.04  2014-07-03 13:37:22 CST
