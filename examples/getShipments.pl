@@ -15,7 +15,9 @@ my $ws = WWW::ShipStation->new(
     pass => $ENV{SHIPSTATION_PASS}
 );
 
-my $order = $ws->deleteOrder(96438004);
-print Dumper(\$order);
+my $shipment = $ws->getShipments(
+    orderId => 96438004,
+);
+print Dumper(\$shipment);
 
 1;

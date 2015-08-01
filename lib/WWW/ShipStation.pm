@@ -2,7 +2,7 @@ package WWW::ShipStation;
 
 use strict;
 use 5.008_005;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use LWP::UserAgent;
 use JSON;
@@ -20,117 +20,80 @@ sub new {
     $args{ua} ||= LWP::UserAgent->new();
     $args{json} ||= JSON->new->allow_nonref->utf8;
 
-    $args{API_BASE} ||= 'https://data.shipstation.com/1.3/';
+    $args{API_BASE} ||= 'https://ssapi.shipstation.com/';
 
     bless \%args, $class;
 }
 
 sub getCarriers {
-    (shift)->request('Carriers');
+    (shift)->request('carriers');
 }
 
-sub getCustomsItems {
-    my $self = shift;
-    my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'CustomsItems()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+sub getCustomer {
+    my ($self, $customerId) = @_;
+    $self->request("customers/$customerId");
 }
 
 sub getCustomers {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'Customers()';
-    if ($args{customerID}) {
-        $url = "Customers($args{customerID})"
-    }
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+    $self->request('customers', %args);
 }
 
-sub getMarketplaces {
-    (shift)->request('Marketplaces');
-}
-
-sub getOrderItems {
-    my $self = shift;
-    my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'OrderItems()';
-    if ($args{orderID}) {
-        $url = "OrderItems($args{orderID})"
-    }
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+sub getOrder {
+    my ($self, $orderId) = @_;
+    $self->request("orders/$orderId");
 }
 
 sub getOrders {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'Orders()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+    $self->request('orders', %args);
 }
 
-sub getPackageTypes {
-    my $self = shift;
-    my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'PackageTypes()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+sub getProduct {
+    my ($self, $productId) = @_;
+    $self->request("products/$productId");
 }
 
 sub getProducts {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'Products()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+    $self->request('products/', %args);
 }
 
 sub getShipments {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'Shipments()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+    $self->request('shipments', %args);
 }
 
-sub getShippingProviders {
-    (shift)->request('ShippingProviders');
-}
-
-sub getShippingServices {
+sub getMarketplaces {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $url = 'ShippingServices()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+    $self->request('stores/marketplaces', %args);
 }
 
 sub getStores {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
+    $self->request('stores', %args);
+}
 
-    my $url = 'Stores()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+sub getStore {
+    my ($self, $storeId) = @_;
+    $self->request("stores/$storeId");
 }
 
 sub getWarehouses {
     my $self = shift;
     my %args = @_ % 2 ? %{$_[0]} : @_;
+    $self->request('warehouses', %args);
+}
 
-    my $url = 'Warehouses()';
-    my %params = map { '$' . $_ => $args{$_} } keys %args;
-    $self->request($url, %params);
+sub getWarehouse {
+    my ($self, $warehouseId) = @_;
+    $self->request("warehouses/$warehouseId");
 }
 
 sub request {
@@ -144,7 +107,7 @@ sub request {
     $req->authorization_basic($self->{user}, $self->{pass});
     $req->header('Accept', 'application/json'); # JSON is better
     my $res = $self->{ua}->request($req);
-    # use Data::Dumper; print STDERR Dumper(\$res);
+    use Data::Dumper; print STDERR Dumper(\$res);
     if ($res->header('Content-Type') =~ m{application/json}) {
         return $self->{json}->decode($res->decoded_content);
     }
@@ -161,207 +124,32 @@ sub request {
     }
 }
 
-sub __now {
-    my @d = localtime();
-    return sprintf('%04d-%02d-%02dT%02d:%02d:%02d', $d[5] + 1900, $d[4] + 1, $d[3], $d[2], $d[1]);
-}
-
 sub createOrder {
     my $self = shift;
-
     my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $__now = __now();
-    my $content = <<XML;
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<entry xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns="http://www.w3.org/2005/Atom">
-  <category scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" term="SS.WebData.Order" />
-  <title />
-  <author>
-    <name />
-  </author>
-  <updated>$__now.1022961Z</updated>
-  <id />
-  <content type="application/xml">
-    <m:properties>
-XML
-
-    # bool
-    foreach my $x ('Active', 'AdditionalHandling', 'Gift', 'NonMachinable', 'SaturdayDelivery', 'ShowPostage') {
-        if ($args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.Boolean">true</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Boolean">false</d:$x>\n~;
-        }
-    }
-
-    # byte
-    foreach my $x ('AddressVerified', 'Confirmation', 'InsuranceProvider') {
-        my $v = $args{$x} ? 1 : 0;
-        $content .= qq~<d:$x m:type="Edm.Byte">$v</d:$x>\n~;
-    }
-
-    # decimal
-    foreach my $x ('AmountPaid', 'ConfirmationCost', 'Height', 'Length', 'Width', 'InsuranceCost', 'InsuredValue', 'OrderTotal', 'OtherCost', 'ShippingAmount') {
-        if (exists $args{$x}) {
-            my $v = sprintf('%.2f', $args{$x});
-            $content .= qq~<d:$x m:type="Edm.Decimal">$v</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Decimal" m:null="true" />\n~;
-        }
-    }
-
-    # int32
-    foreach my $x ('CustomerID', 'EmailTemplateID', 'PackageTypeID', 'PackingSlipID', 'MarketplaceID', 'OrderID', 'OrderStatusID', 'ProviderID', 'RequestedServiceID', 'SellerID', 'ServiceID', 'StoreID', 'WarehouseID', 'WeightOz') {
-        $args{$x} ||= 0 if $x eq 'OrderID';
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.Int32">$args{$x}</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Int32" m:null="true" />\n~;
-        }
-    }
-
-    # DateTime
-    foreach my $x ('ImportBatch') {
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.Guid">$args{$x}</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Guid" m:null="true" />\n~;
-        }
-    }
-
-    # DateTime
-    foreach my $x ('CreateDate', 'HoldUntil', 'ModifyDate', 'OrderDate', 'PayDate', 'ShipDate') {
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.DateTime">$args{$x}</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.DateTime" m:null="true" />\n~;
-        }
-    }
-
-    foreach my $x ('BuyerEmail', 'ExternalPaymentID', 'ExternalUrl', 'ImportKey', 'NonDelivery', 'CustomsContents', 'NotesFromBuyer', 'NotesToBuyer', 'InternalNotes', 'OrderNumber', 'RateError', 'RequestedShippingService', 'ResidentialIndicator', 'ShipCity', 'ShipCompany', 'ShipCountryCode', 'ShipName', 'ShipPhone', 'ShipPostalCode', 'ShipState', 'ShipStreet1', 'ShipStreet2', 'ShipStreet3', 'Username') {
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x>~ . __simple_escape($args{$x}) . qq~</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:null="true" />\n~;
-        }
-    }
-
-    $content .= <<'XML';
-    </m:properties>
-  </content>
-</entry>
-XML
-
-    $self->__request('POST', 'https://data.shipstation.com/1.2/Orders', $content);
-}
-
-sub __simple_escape {
-    my $str = shift;
-    $str =~ s/\&/\&amp;/g;
-    $str =~ s/\</\&lt;/g;
-    $str =~ s/\>/\&gt;/g;
-    $str;
+    $self->__request('POST', 'orders/createorder', $self->{json}->encode(\%args));
 }
 
 sub deleteOrder {
     my ($self, $orderID) = @_;
 
-    $self->__request('DELETE', "http://data.shipstation.com/1.2/Orders($orderID)");
-}
-
-sub createOrderItem {
-    my $self = shift;
-
-    my %args = @_ % 2 ? %{$_[0]} : @_;
-
-    my $__now = __now();
-    my $content = <<XML;
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<entry xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns="http://www.w3.org/2005/Atom">
-  <category scheme="http://schemas.microsoft.com/ado/2007/08/dataservices/scheme" term="SS.WebData.OrderItem" />
-  <title />
-  <author>
-    <name />
-  </author>
-  <updated>$__now.6214402Z</updated>
-  <id />
-  <content type="application/xml">
-    <m:properties>
-XML
-
-    # bool
-    foreach my $x ('Inactive') {
-        if ($args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.Boolean">true</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Boolean">false</d:$x>\n~;
-        }
-    }
-
-    # decimal
-    foreach my $x ('ExtendedPrice', 'ShippingAmount', 'TaxAmount', 'WeightOz') {
-        if (exists $args{$x}) {
-            my $v = sprintf('%.2f', $args{$x});
-            $content .= qq~<d:$x m:type="Edm.Decimal">$v</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Decimal" m:null="true" />\n~;
-        }
-    }
-
-    # int32
-    foreach my $x ('OrderID', 'OrderItemID', 'ProductID', 'Quantity', 'UnitCost', 'UnitPrice') {
-        $args{$x} ||= 0 if $x eq 'OrderID' or $x eq 'OrderItemID';
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.Int32">$args{$x}</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.Int32" m:null="true" />\n~;
-        }
-    }
-
-    # DateTime
-    foreach my $x ('CreateDate', 'ModifyDate') {
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x m:type="Edm.DateTime">$args{$x}</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:type="Edm.DateTime" m:null="true" />\n~;
-        }
-    }
-
-    foreach my $x ('Description', 'ItemUrl', 'Options', 'SKU', 'ThumbnailUrl', 'UPC', 'WarehouseLocation') {
-        if (exists $args{$x}) {
-            $content .= qq~<d:$x>~ . __simple_escape($args{$x}) . qq~</d:$x>\n~;
-        } else {
-            $content .= qq~<d:$x m:null="true" />\n~;
-        }
-    }
-
-    $content .= <<'XML';
-    </m:properties>
-  </content>
-</entry>
-XML
-
-    $self->__request('POST', 'https://data.shipstation.com/1.2/OrderItems', $content);
+    $self->__request('DELETE', "orders/$orderID");
 }
 
 sub __request {
     my ($self, $method, $url, $content) = @_;
 
-    my $req = HTTP::Request->new($method => $url);
+    my $req = HTTP::Request->new($method => $self->{API_BASE} . $url);
     $req->authorization_basic($self->{user}, $self->{pass});
     $req->header('Accept', 'application/json'); # JSON is better
     $req->header('Accept-Charset' => 'UTF-8');
     if ($method eq 'POST') {
-        $req->header('Content-Type' => 'application/atom+xml');
+        $req->header('Content-Type' => 'application/json');
     }
     $req->content($content) if $content;
 
     my $res = $self->{ua}->request($req);
     # use Data::Dumper; print STDERR Dumper(\$res);
-    if ($method eq 'DELETE') {
-        return $res->code == 204 ? 1 : 0;
-    }
     if ($res->header('Content-Type') =~ m{application/json}) {
         return $self->{json}->decode($res->decoded_content);
     }
@@ -394,7 +182,7 @@ WWW::ShipStation - ShipStation API
 
 =head1 DESCRIPTION
 
-WWW::ShipStation is for L<http://api.shipstation.com/>
+WWW::ShipStation is for L<http://www.shipstation.com/developer-api/>
 
 refer examples for running code
 
@@ -431,160 +219,192 @@ optional, L<JSON> based
 
     my $carriers = $ws->getCarriers();
 
-L<http://api.shipstation.com/Carriers-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/customers/list-carriers>
 
-=head2 getCustomsItems
+=head2 getCustomer
 
-    my $customitems = $ws->getCustomsItems(
-        filter => "Order/OrderNumber eq '1111113'",
-    ); # https://data.shipstation.com/1.1/CustomsItems()?$filter=Order/OrderNumber eq '1111113'
-
-L<http://api.shipstation.com/CustomsItem-Resource.ashx>
+    my $customer = $ws->getCustomer($customer_id);
 
 =head2 getCustomers
 
     my $customers = $ws->getCustomers();
     my $customers = $ws->getCustomers(
-        orderby => 'Name',
-        top => 100
-    ); # https://data.shipstation.com/1.1/Customers()?$orderby=Name&$top=100
-    my $customers = $ws->getCustomers(
-        orderby => 'Name',
-        skip => 100,
-        top => 100
-    ); # https://data.shipstation.com/1.1/Customers()?$orderby=Name&$skip=100&$top=100
-    my $customers = $ws->getCustomers(
-        customerID => 29229
-    ); # https://data.shipstation.com/1.1/Customers(29229)
-    my $customers = $ws->getCustomers(
-        filter => "Email eq 'support@shipstation.com'"
-    ); # http://data.shipstation.com/1.1/Customers()?$filter=Email eq 'support@shipstation.com'
+        stateCode => ...
+        countryCode => ...
+    );
 
-L<http://api.shipstation.com/Customer-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/customers/list-customers/list-customers>
 
 =head2 getMarketplaces
 
     my $marketplaces = $ws->getMarketplaces();
 
-L<http://api.shipstation.com/Marketplace-Resource.ashx>
-
-=head2 getOrderItems
-
-    my $orderitems = $ws->getOrderItems();
-    my $orderitems = $ws->getOrderItems(
-        filter => "Order/OrderNumber eq '1018'"
-    ); # https://data.shipstation.com/1.1/OrderItems()?$filter=Order/OrderNumber eq '1018'
-
-L<http://api.shipstation.com/OrderItems-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/stores/storesmarketplaces/get>
 
 =head2 getOrders
 
     my $orders = $ws->getOrders();
     my $orders = $ws->getOrders(
-        filter => "(OrderDate ge datetime'2012-06-30T00:00:00') and (OrderDate le datetime'2012-07-01T00:00:00')",
-        expand => 'OrderItems',
-    ); # https://data.shipstation.com/1.1/Orders()?$filter=(OrderDate ge datetime'2012-06-30T00:00:00') and (OrderDate le datetime'2012-07-01T00:00:00')&$expand=OrderItems
+        customerName => ...
+        createDateStart => ...
+    );
 
-L<http://api.shipstation.com/Order-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/orders/orders/get>
 
-=head2 getPackageTypes
+=head2 getOrder
 
-    my $packagetypes = $ws->getPackageTypes(
-        filter => 'Domestic eq true'
-    ); # https://data.shipstation.com/1.1/PackageTypes()?$filter=Domestic eq true
+    my $order = $ws->getOrder($orderId);
 
-L<http://api.shipstation.com/PackageType-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/orders/order/get-order>
 
 =head2 getProducts
 
     my $products = $ws->getProducts(
-        filter => "SKU eq '12345'"
-    ); # https://data.shipstation.com/1.1/Products()?$filter=SKU eq '12345'
+        sku => ...
+    );
 
-L<http://api.shipstation.com/Product-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/products/products/get>
 
 =head2 getShipments
 
     my $shipments = $ws->getShipments(
-        filter => "Order/OrderNumber eq '100000001'",
-        expand => 'ShipmentItems',
-    ); # https://data.shipstation.com/1.1/Shipments()?$filter=Order/OrderNumber%20eq%20'100000001'&$expand=ShipmentItems
-    my $shipments = $ws->getShipments(
-        filter => "(ShipDate ge datetime'2012-06-01T00:00:00') and (ShipDate lt datetime'2012-06-09T00:00:00')",
-    ); # https://data.shipstation.com/1.1/Shipments()?$filter=(ShipDate ge datetime'2012-06-01T00:00:00') and (ShipDate lt datetime'2012-06-09T00:00:00')
+        orderId => ...
+    );
 
-L<http://api.shipstation.com/ShipmentItem-Resource.ashx>
-L<http://api.shipstation.com/Shipment-Resource.ashx>
-
-=head2 getShippingProviders
-
-    my $shippingproviders = $ws->getShippingProviders();
-
-L<http://api.shipstation.com/ShippingService-Provider.ashx>
-
-=head2 getShippingServices
-
-    my $shippingservice = $ws->getShippingServices(
-        filter => "(International eq false) and (ProviderId eq 4)"
-    ); # https://data.shipstation.com/1.1/ShippingServices()?$filter=(International eq false) and (ProviderId eq 4)
-
-L<http://api.shipstation.com/ShippingService%20Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/shipments/shipments/get>
 
 =head2 getStores
 
     my $stores = $ws->getStores(
-        filter => "Active eq true"
-    ); # https://data.shipstation.com/1.3/Stores()?$filter=Active eq true
+        showInactive => 1,
+    );
 
-L<http://api.shipstation.com/Store-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/stores>
 
 =head2 getWarehouses
 
-    my $warehouses = $ws->getWarehouses(
-        filter => 'Default eq true'
-    ); # https://data.shipstation.com/1.1/Warehouses()?$filter=Default eq true
+    my $warehouses = $ws->getWarehouses();
 
-L<http://api.shipstation.com/Warehouse-Resource.ashx>
+L<http://www.shipstation.com/developer-api/#/reference/warehouses/warehouses/get>
 
 =head2 createOrder
 
-    my $order = $ws->createOrder(
-        StoreID => 0,
-        OrderNumber => "TEST001",
-        ImportKey   => "TEST001",
-        OrderDate   => "2014-07-02T09:30:00",
-        PayDate     => "2014-07-02T09:30:00",
-        OrderStatusID => 2,
-        RequestedShippingService => "USPS Priority Mail",
-        OrderTotal => '123.45',
-        AmountPaid => '123.45',
-        ShippingAmount => '4.50',
-        WeightOz => 16,
-        NotesFromBuyer => "Please make sure it gets here by Monday!",
-        Username       => 'customer@mystore.com',
-        BuyerEmail     => 'customer@mystore.com',
-        ShipName       => "The President",
-        ShipCompany    => "US Govt",
-        ShipStreet1    => "1600 Pennsylvania Ave",
-        ShipCity       => "Washington",
-        ShipState      => "DC",
-        ShipPostalCode => "20500",
-        ShipCountryCode => "US",
-        ShipPhone      => "512-555-5555",
-    );
-
-=head2 createOrderItem
-
-    my $orderItem = $ws->createOrderItem(
-        OrderID => $OrderID,
-        SKU => "FD88821",
-        Description   => "My Product Name",
-        ThumbnailUrl   => "http://www.mystore.com/products/12345.jpg",
-        WeightOz => 8,
-        Quantity => 2,
-        UnitPrice => 13.99,
-        Options => "Size: Large\nColor: Green",
-    );
+    my $order = $ws->createOrder({
+      "orderNumber" => "TEST-ORDER-API-DOCS",
+      "orderKey" => "0f6bec18-3e89-4771-83aa-f392d84f4c74",
+      "orderDate" => "2015-06-29T08:46:27.0000000",
+      "paymentDate" => "2015-06-29T08:46:27.0000000",
+      "orderStatus" => "awaiting_shipment",
+      "customerUsername" => 'headhoncho@whitehouse.gov',
+      "customerEmail" => 'headhoncho@whitehouse.gov',
+      "billTo" => {
+        "name" => "The President",
+        "company" => undef,
+        "street1" => undef,
+        "street2" => undef,
+        "street3" => undef,
+        "city" => undef,
+        "state" => undef,
+        "postalCode" => undef,
+        "country" => undef,
+        "phone" => undef,
+        "residential" => undef
+      },
+      "shipTo" => {
+        "name" => "The President",
+        "company" => "US Govt",
+        "street1" => "1600 Pennsylvania Ave",
+        "street2" => "Oval Office",
+        "street3" => undef,
+        "city" => "Washington",
+        "state" => "DC",
+        "postalCode" => "20500",
+        "country" => "US",
+        "phone" => "555-555-5555",
+        "residential" => 1
+      },
+      "items" => [
+        {
+          "lineItemKey" => "vd08-MSLbtx",
+          "sku" => "ABC123",
+          "name" => "Test item #1",
+          "imageUrl" => undef,
+          "weight" => {
+            "value" => 24,
+            "units" => "ounces"
+          },
+          "quantity" => 2,
+          "unitPrice" => 99.99,
+          "warehouseLocation" => "Aisle 1, Bin 7",
+          "options" => [
+            {
+              "name" => "Size",
+              "value" => "Large"
+            }
+          ],
+          "adjustment" => 0
+        },
+        {
+          "lineItemKey" => undef,
+          "sku" => "DISCOUNT CODE",
+          "name" => "10% OFF",
+          "imageUrl" => undef,
+          "weight" => {
+            "value" => 0,
+            "units" => "ounces"
+          },
+          "quantity" => 1,
+          "unitPrice" => -20.55,
+          "warehouseLocation" => undef,
+          "options" => [],
+          "adjustment" => 1
+        }
+      ],
+      "amountPaid" => 218.73,
+      "taxAmount" => 5,
+      "shippingAmount" => 10,
+      "customerNotes" => "Thanks for ordering!",
+      "internalNotes" => "Customer called and would like to upgrade shipping",
+      "gift" => 1,
+      "giftMessage" => "Thank you!",
+      "paymentMethod" => "Credit Card",
+      "requestedShippingService" => "Priority Mail",
+      "carrierCode" => "fedex",
+      "serviceCode" => "fedex_2day",
+      "packageCode" => "package",
+      "confirmation" => "delivery",
+      "shipDate" => "2015-07-02",
+      "weight" => {
+        "value" => 25,
+        "units" => "ounces"
+      },
+      "dimensions" => {
+        "units" => "inches",
+        "length" => 7,
+        "width" => 5,
+        "height" => 6
+      },
+      "insuranceOptions" => {
+        "provider" => "carrier",
+        "insureShipment" => 1,
+        "insuredValue" => 200
+      },
+      "internationalOptions" => {
+        "contents" => undef,
+            "customsItems" => undef
+      },
+      "advancedOptions" => {
+        "warehouseId" => 0,
+        "nonMachinable" => 0,
+        "saturdayDelivery" => 0,
+        "containsAlcohol" => 0,
+        "storeId" => 0,
+        "customField1" => "Custom data",
+        "customField2" => "Per UI settings, this information",
+        "customField3" => "can appear on some carrier's shipping labels",
+        "source" => "Webstore"
+      }
+    });
 
 =head2 deleteOrder
 
@@ -592,10 +412,8 @@ L<http://api.shipstation.com/Warehouse-Resource.ashx>
 
 =head2 request
 
-    my $data = $ws->request('Customers()');
-    my $data = $ws->request('Warehouses()',
-        filter => 'Default eq true'
-    );
+    my $data = $ws->request('customers');
+    my $data = $ws->request('warehouses');
 
 internal use
 

@@ -15,10 +15,7 @@ my $ws = WWW::ShipStation->new(
     pass => $ENV{SHIPSTATION_PASS}
 );
 
-my $customers = $ws->getCustomers(
-    orderby => 'Name',
-    top => 100
-);
+my $customers = $ws->getCustomers();
 print Dumper(\$customers);
 
 1;

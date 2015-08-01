@@ -1,6 +1,7 @@
 Revision history for WWW-ShipStation
 
 {{$NEXT}}
+        - change for new API endpoint, API IS ALL CHANGED!
 
 0.04  2014-07-03 13:37:22 CST
         - add createOrder and createOrderItem, deleteOrder
