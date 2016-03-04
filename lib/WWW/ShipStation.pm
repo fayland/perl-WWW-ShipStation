@@ -107,7 +107,7 @@ sub request {
     $req->authorization_basic($self->{user}, $self->{pass});
     $req->header('Accept', 'application/json'); # JSON is better
     my $res = $self->{ua}->request($req);
-    use Data::Dumper; print STDERR Dumper(\$res);
+    # use Data::Dumper; print STDERR Dumper(\$res);
     if ($res->header('Content-Type') =~ m{application/json}) {
         return $self->{json}->decode($res->decoded_content);
     }

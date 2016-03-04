@@ -23,11 +23,11 @@ refer examples for running code
 
 - user
 
-    required
+    required, API key
 
 - pass
 
-    required
+    required, API secret
 
 - ua
 
